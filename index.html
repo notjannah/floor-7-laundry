@@ -1,3 +1,641 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#32104f">
+<title>Floor 7 Laundry</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+
+:root {
+  --purple:#4a3156;
+  --deep:#35203f;
+  --lavender:#35203f;
+  --gold:#b9a16a;
+  --cream:#e8e2e9;
+  --ink:#30233b;
+  --muted:#756b7c;
+  --green:#26734b;
+  --red:#b63845;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  background:var(--lavender);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  line-height:1.5;
+}
+main {width:min(100% - 28px,1000px);margin:auto;padding:24px 0 40px}
+header {
+  background:var(--purple);
+  color:white;
+  padding:30px 24px;
+  border:1px solid var(--gold);
+  border-bottom:6px solid var(--gold);
+  border-radius:22px;
+  box-shadow:0 12px 30px #210b3225;
+}
+.eyebrow {
+  display:inline-block;
+  color:var(--gold);
+  text-transform:uppercase;
+  letter-spacing:1.6px;
+  font-size:.78rem;
+  font-weight:900;
+  padding:7px 12px;
+  border:1px solid #b9a16a99;
+  border-radius:10px;
+}
+h1,h2,.footer-title {
+  font-family:Inter,"Helvetica Neue",Arial,sans-serif;
+  font-weight:900;
+}
+h1 {font-size:clamp(2.2rem,7vw,3.6rem);line-height:1.05;margin:14px 0}
+header p {max-width:650px;color:#f0e6f5;margin-bottom:0}
+h2 {margin:0 0 10px}
+section {margin-top:22px}
+.machine-status-heading {justify-content:center;text-align:center;font-weight:900;width:100%;font-size:1.15rem;letter-spacing:.7px}
+.notice {
+  margin:18px 0;padding:12px 15px;border-radius:12px;
+  background:var(--cream);border:1px solid var(--gold);font-size:.92rem;
+}
+.toolbar {display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:14px}
+.card {
+  min-width:0;background:var(--cream);border:1px solid var(--gold);
+  border-radius:19px;padding:19px;box-shadow:0 7px 22px #30104412;
+}
+.card h2 {
+  display:block;
+  width:100%;
+  background:#e8e2e9;
+  color:var(--purple);
+  border:1px solid #b9a16a;
+  border-radius:12px;
+  padding:10px 12px;
+  margin:10px 0;
+  font-size:1.35rem;
+  font-weight:900;
+}
+.pill {
+  display:inline-block;background:#e8e2e9;color:var(--purple);
+  padding:5px 10px;border:1px solid #b9a16a;border-radius:9px;
+  font-size:.73rem;font-weight:900;text-transform:uppercase;letter-spacing:.8px;
+}
+.status {font-weight:900;margin:12px 0 7px;text-transform:uppercase;font-size:.91rem}
+.free {color:var(--green)}
+.busy {color:var(--red)}
+.maybe {color:#926200}
+.timer-label {font-size:.76rem;font-weight:900;letter-spacing:.5px;margin-top:12px}
+.cycle-length {color:#89818d;font-weight:600;letter-spacing:0;text-transform:none}
+.time-left {font-size:2.2rem;font-weight:900;color:var(--purple);font-variant-numeric:tabular-nums;line-height:1.2;margin-top:4px}
+.progress-track {height:10px;background:#e8e2eb;border-radius:20px;overflow:hidden;margin:10px 0 14px}
+.progress-fill {height:100%;width:0;background:#b63845;border-radius:20px;transition:width .3s,background .3s}
+.colour-guide {
+  margin-top:14px;background:var(--cream);border:1px solid var(--gold);
+  border-radius:16px;padding:16px 18px;
+}
+.colour-guide h2 {font-size:1.05rem;margin:0 0 10px}
+.guide-items {display:flex;flex-wrap:wrap;gap:10px 18px}
+.guide-item {display:flex;align-items:center;gap:7px;font-size:.83rem}
+.swatch {width:11px;height:11px;border-radius:50%;flex:none}
+.small {font-size:.86rem;color:var(--muted)}
+label {display:block;font-size:.87rem;font-weight:750;margin:14px 0 5px}
+input,textarea,select {
+  width:100%;font:inherit;padding:11px 12px;border:1px solid #d5c6df;
+  border-radius:10px;background:white;color:var(--ink);
+}
+textarea {min-height:90px;resize:vertical}
+button {
+  font:inherit;font-weight:850;cursor:pointer;border:1px solid transparent;border-radius:11px;
+  padding:11px 14px;background:var(--purple);color:white;
+  transition:transform .15s,opacity .15s;
+}
+button:hover {transform:translateY(-1px)}
+button:disabled {opacity:.45;cursor:not-allowed;transform:none}
+button.secondary {background:#e8e2e9;color:var(--purple);border-color:#d9cbe3}
+button.gold {background:var(--gold);color:var(--deep)}
+.actions {display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.actions button {min-width:0}
+.actions button.secondary {background:var(--gold);color:var(--deep);border-color:#9a8555}
+.panel {
+  background:var(--cream);border:1px solid var(--gold);border-radius:19px;padding:20px;
+  margin-top:20px;min-width:0;
+}
+.panel h2 {color:var(--purple)}
+.panel p {margin-top:5px}
+.two-col {display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.two-col .panel {margin-top:20px}
+.list-item {padding:12px 0;border-bottom:1px solid #e9deef;overflow-wrap:anywhere}
+.list-item:last-child {border-bottom:0}
+.empty {color:var(--muted);font-size:.9rem}
+.reminder {background:#fff5d9;border-left:4px solid var(--gold);padding:14px 16px;border-radius:10px}
+footer {text-align:center;margin-top:32px;padding:24px 12px;color:var(--purple)}
+.footer-title {font-size:1rem;font-weight:900}
+.footer-credit {margin-top:5px;font-size:.88rem;color:#51415d}
+.modal-backdrop {
+  position:fixed;inset:0;background:#170724aa;display:grid;place-items:center;
+  padding:20px;z-index:10;
+}
+.modal-backdrop[hidden] {display:none}
+.reminder-box {background:var(--cream);border:1px solid var(--gold);border-radius:20px;padding:24px;max-width:420px;width:100%}
+.reminder-box h2 {color:var(--purple)}
+@media(max-width:650px) {
+  main {width:min(100% - 20px,1000px);padding-top:12px}
+  header {padding:23px 18px;border-radius:17px}
+  .grid,.two-col {grid-template-columns:1fr}
+  .card,.panel {padding:15px}
+  .toolbar {align-items:flex-start}
+  .actions button {padding:12px 8px;font-size:.83rem}
+  .time-left {font-size:2rem}
+  .guide-items {display:grid;grid-template-columns:1fr 1fr}
+}
+
+
+/* Centre the MACHINE STATUS heading */
+.machine-status-heading {
+  display: flex !important;
+  justify-content: center !important;
+  text-align: center !important;
+  width: 100%;
+}
+.machine-status-heading h2 {
+  width: 100%;
+  text-align: center !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+\n
+/* Deep plum blended background */
+body {
+  background: linear-gradient(
+    125deg,
+    #170823 0%,
+    #261038 32%,
+    #3b1b55 62%,
+    #1b0928 100%
+  ) fixed !important;
+  min-height: 100vh;
+}
+
+/* Clear, visible Machine Status heading */
+.machine-status-heading {
+  justify-content: center !important;
+  text-align: center !important;
+  width: 100%;
+}
+.machine-status-heading h2 {
+  color: #301044 !important;
+  background: #e9ddf2 !important;
+  border: 1px solid #b9a16a !important;
+  text-align: center !important;
+  font-weight: 900 !important;
+}
+\n
+/* Professional aubergine and champagne theme */
+body {
+  background: linear-gradient(
+    125deg,
+    #35203f 0%,
+    #493354 38%,
+    #403049 70%,
+    #302039 100%
+  ) fixed !important;
+  min-height: 100vh;
+}
+.machine-status-heading {
+  justify-content: center !important;
+  text-align: center !important;
+  width: 100%;
+}
+.machine-status-heading h2 {
+  color: #ffffff !important;
+  background: transparent !important;
+  border: none !important;
+  text-align: center !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+
+/* Compact live availability labels */
+.availability-summary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 8px auto 14px;
+}
+.availability-pill {
+  background: #e8e2e9;
+  color: #35203f;
+  border: 1px solid #b9a16a;
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: .25px;
+  white-space: nowrap;
+}
+
+
+/* Live traffic-light colours */
+.availability-pill.status-green {
+  background: #183d2c;
+  color: #86efac;
+  border-color: #4ade80;
+}
+.availability-pill.status-yellow {
+  background: #493a1c;
+  color: #fde68a;
+  border-color: #facc15;
+}
+.availability-pill.status-red {
+  background: #482323;
+  color: #fca5a5;
+  border-color: #f87171;
+}
+.availability-pill .status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+  background: currentColor;
+}
+
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="eyebrow">FLOOR 7 · LAUNDRY ROOM</div>
+  <h1>Floor 7 Laundry</h1>
+  <p>Check washer and dryer availability before heading down. Start your timer to help keep track of when a machine should be ready.</p>
+</header>
+
+<div class="notice" id="notice" role="status" aria-live="polite">Connecting to the shared laundry tracker…</div>
+
+<div class="toolbar machine-status-heading">
+  <h2>MACHINE STATUS</h2>
+</div>
+<div class="availability-summary" aria-label="Live machine availability">
+  <div class="availability-pill" id="availableCount">AVAILABLE · —</div>
+  <div class="availability-pill" id="washerCount">WASHERS · —/2</div>
+  <div class="availability-pill" id="dryerCount">DRYERS · —/2</div>
+</div>
+<div class="grid" id="machines"></div>
+
+<div class="colour-guide" aria-label="COUNTDOWN COLOUR GUIDE">
+  <h2>COUNTDOWN COLOUR GUIDE</h2>
+  <div class="guide-items">
+    <div class="guide-item"><span class="swatch" style="background:#b63845"></span>Red · Plenty of time left</div>
+    <div class="guide-item"><span class="swatch" style="background:#e77b28"></span>Orange · Getting closer</div>
+    <div class="guide-item"><span class="swatch" style="background:#e3bd38"></span>Yellow · Nearly complete</div>
+    <div class="guide-item"><span class="swatch" style="background:#27824c"></span>Green · Final portion of time</div>
+    <div class="guide-item"><span class="swatch" style="background:#89818d"></span>Grey · Timer expired</div>
+  </div>
+</div>
+
+
+
+<div class="two-col">
+  <section class="panel" aria-labelledby="historyHeading">
+    <h2 id="historyHeading">Laundry History</h2>
+    <p class="small">Recent completed cycles, including when they started and when the machine was marked available.</p>
+    <div id="history"><p class="empty">Loading laundry history…</p></div>
+  </section>
+
+  <section class="panel" aria-labelledby="reportHeading">
+    <h2 id="reportHeading">Report a broken machine</h2>
+    <form id="reportForm">
+      <label for="reportMachine">Machine</label>
+      <select id="reportMachine" required>
+        <option value="washer1">Washer 1</option>
+        <option value="washer2">Washer 2</option>
+        <option value="dryer1">Dryer 1</option>
+        <option value="dryer2">Dryer 2</option>
+      </select>
+      <label for="reportName">Your name or nickname (optional)</label>
+      <input id="reportName" maxlength="40" placeholder="Nickname">
+      <label for="reportDescription">What is wrong?</label>
+      <textarea id="reportDescription" maxlength="1000" required placeholder="Describe the issue…"></textarea>
+      <button type="submit" style="margin-top:12px">Submit report</button>
+    </form>
+    <div id="reportMessage" class="small" role="status"></div>
+  </section>
+</div>
+
+<section class="panel" aria-labelledby="reportsHeading">
+  <h2 id="reportsHeading">Recent broken-machine reports</h2>
+  <div id="reports"><p class="empty">Loading reports…</p></div>
+</section>
+
+<footer>
+  <div class="footer-credit"><span style="color:#b9a16a">DESIGNED &amp; DEVELOPED BY</span><br><strong style="color:#b9a16a">Jannah (Jay) Rillon</strong></div>
+</footer>
+</main>
+
+<script>
+const SUPABASE_URL = "https://svwhxepzyidhnbkmrsgc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_pXPEwdPBTFDqg50P8m8GlA_8j-RBQep";
+const root = document.getElementById("machines");
+const notice = document.getElementById("notice");
+const reportsRoot = document.getElementById("reports");
+const historyRoot = document.getElementById("history");
+let client;
+let machines = [];
+
+const machineNames = {
+  washer1:"Washer (Left)",
+  washer2:"Washer (Right)",
+  dryer1:"Dryer (Left)",
+  dryer2:"Dryer (Right)"
+};
+
+function safe(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function remaining(m) {
+  if (!m.ends_at) return 0;
+  return Math.max(0, Math.ceil((new Date(m.ends_at).getTime()-Date.now())/60000));
+}
+function progress(m) {
+  if (!m.started_at || !m.ends_at) return 0;
+  const start = new Date(m.started_at).getTime();
+  const end = new Date(m.ends_at).getTime();
+  if (end <= start) return 100;
+  return Math.max(0,Math.min(100,((Date.now()-start)/(end-start))*100));
+}
+function render() {
+  // Avoid replacing machine cards while someone is typing on a phone.
+  const focused = document.activeElement;
+  if (focused && root.contains(focused) && focused.tagName === "INPUT") return;
+  const availableCount = document.getElementById("availableCount");
+  const washerCount = document.getElementById("washerCount");
+  const dryerCount = document.getElementById("dryerCount");
+
+  const washers = machines.filter(m => String(m.machine_id).startsWith("washer"));
+  const dryers = machines.filter(m => String(m.machine_id).startsWith("dryer"));
+  const available = list => list.filter(m => !m.ends_at).length;
+
+  const availableMachines = available(machines);
+  const availableWashers = available(washers);
+  const availableDryers = available(dryers);
+
+  availableCount.textContent = `AVAILABLE · ${availableMachines}`;
+  washerCount.textContent = `WASHERS · ${availableWashers}/${washers.length || 2}`;
+  dryerCount.textContent = `DRYERS · ${availableDryers}/${dryers.length || 2}`;
+
+  function setTrafficLight(element, count, total, greenMinimum) {
+    element.classList.remove("status-green", "status-yellow", "status-red");
+    const colour = count === 0 ? "red"
+      : count >= greenMinimum ? "green"
+      : "yellow";
+    element.classList.add("status-" + colour);
+  }
+
+  setTrafficLight(availableCount, availableMachines, machines.length || 4, 3);
+  setTrafficLight(washerCount, availableWashers, washers.length || 2, 2);
+  setTrafficLight(dryerCount, availableDryers, dryers.length || 2, 2);
+
+  const order = {washer1:0, dryer1:1, washer2:2, dryer2:3};
+  const ordered = [...machines].sort((a,b) =>
+    (order[a.machine_id] ?? 99) - (order[b.machine_id] ?? 99)
+  );
+
+  root.innerHTML = ordered.map(m => {
+    const mins = remaining(m);
+    const hasCycle = Boolean(m.ends_at);
+    const finished = hasCycle && mins <= 0;
+    const elapsed = finished
+      ? Math.max(0, Math.floor((Date.now()-new Date(m.ends_at).getTime())/60000))
+      : 0;
+    const maybe = finished && elapsed >= 30;
+    const busy = hasCycle;
+    const defaultMinutes = m.machine_type === "Washer" ? 30 : 45;
+    const id = safe(m.machine_id);
+    const displayName = machineNames[m.machine_id] || m.machine_name || "Machine";
+    const cycleLength = Number(m.cycle_minutes) || defaultMinutes;
+    let status = "AVAILABLE", statusClass = "free";
+    let details = '<p class="small">Ready for the next person.</p>';
+    let timerColor = "#89818d";
+
+    if (busy && !finished) {
+      const ratio = cycleLength > 0 ? mins / cycleLength : 0;
+      timerColor = ratio > .66 ? "#b63845" :
+        ratio > .33 ? "#e77b28" :
+        ratio > .15 ? "#e3bd38" : "#27824c";
+      status = `IN USE · ${safe(m.user_name || "Floor resident")}`;
+      statusClass = "busy";
+      details = `<div class="timer-label">TIME REMAINING TO CYCLE COMPLETE <span class="cycle-length">(${cycleLength} mins)</span></div>
+        <div class="time-left">${mins} min${mins === 1 ? "" : "s"}</div>
+        <div class="progress-track" aria-label="Cycle progress"><div class="progress-fill" style="width:${progress(m)}%;background:${timerColor}"></div></div>
+        <p class="small">Started by ${safe(m.user_name || "Floor resident")}</p>`;
+    } else if (finished && !maybe) {
+      status = "CYCLE FINISHED"; statusClass = "busy";
+      details = `<div class="timer-label">TIME REMAINING TO CYCLE COMPLETE <span class="cycle-length">(${cycleLength} mins)</span></div>
+        <div class="time-left" style="color:#89818d">00:00</div>
+        <div class="progress-track"><div class="progress-fill" style="width:100%;background:#89818d"></div></div>
+        <p class="small"><strong>LAUNDRY CYCLE HAS FINISHED. COLLECT YOUR LAUNDRY AND CLICK MARK AVAILABLE.</strong></p>
+        <p class="small">Last used by: ${safe(m.user_name || "Floor resident")}</p>`;
+    } else if (maybe) {
+      status = "POSSIBLY AVAILABLE"; statusClass = "maybe";
+      details = `<div class="timer-label">TIME REMAINING TO CYCLE COMPLETE <span class="cycle-length">(${cycleLength} mins)</span></div>
+        <div class="time-left" style="color:#89818d">00:00</div>
+        <p class="small"><strong>Timer ended ${elapsed} minute${elapsed === 1 ? "" : "s"} ago.</strong></p>
+        <p class="small">Last used by: ${safe(m.user_name || "Floor resident")}</p>
+        <p class="small">Please check the machine and click Mark available only when it is empty.</p>`;
+    }
+
+    return `<section class="card">
+      <span class="pill">${safe(m.machine_type || "Machine")}</span>
+      <h2>${safe(displayName)}</h2>
+      <div class="status ${statusClass}">${status}</div>
+      ${details}
+      <label for="name-${id}">Your name or nickname</label>
+      <input id="name-${id}" maxlength="40" placeholder="Enter your name" autocomplete="nickname">
+      <label for="minutes-${id}">Custom cycle time (minutes)</label>
+      <input id="minutes-${id}" type="number" min="25" max="45" step="1" value="${defaultMinutes}" inputmode="numeric">
+      <p class="small">Choose a whole number from 25 to 45 minutes.</p>
+      <div class="actions">
+        <button ${busy ? "disabled" : ""} onclick="startCycle('${id}')">Start timer</button>
+        <button class="secondary" onclick="markAvailable('${id}')">MARK AVAILABLE</button>
+      </div>
+    </section>`;
+  }).join("");
+}
+async function load() {
+  const {data,error} = await client.from("laundry_machines").select("*").order("machine_id");
+  if (error) {
+    notice.textContent = "Couldn't load machines: " + error.message;
+    return;
+  }
+  machines = data || [];
+  render();
+  notice.textContent = "Connected! Machine updates are shared through Supabase.";
+  await loadReports();
+  await loadHistory();
+  checkFinishedCycles();
+}
+async function startCycle(id) {
+  const m = machines.find(x=>x.machine_id===id);
+  if (!m) return;
+  if (m.ends_at) {
+    alert("This machine has not been marked available yet. Please check it and click Mark available first.");
+    return;
+  }
+  const nameInput = document.getElementById("name-"+id);
+  const minutesInput = document.getElementById("minutes-"+id);
+  const name = nameInput.value.trim();
+  const minutes = Number(minutesInput.value);
+  if (!name) { alert("Please enter your name or nickname first."); nameInput.focus(); return; }
+  if (!Number.isInteger(minutes) || minutes<25 || minutes>45) {
+    alert("Choose a timer between 25 and 45 minutes."); minutesInput.focus(); return;
+  }
+  const now = new Date();
+  const ends = new Date(now.getTime()+minutes*60000);
+  const {data,error} = await client.from("laundry_machines").update({
+    user_name:name,started_at:now.toISOString(),
+    ends_at:ends.toISOString(),cycle_minutes:minutes
+  }).eq("machine_id",id).is("ends_at",null).select("machine_id");
+  if (error) {
+    alert("Couldn't start timer: "+error.message);
+  } else if (!data || data.length===0) {
+    alert("Someone has just started this machine. Please choose another available machine.");
+    await load();
+  } else {
+    notice.textContent = "Timer started successfully.";
+    await load();
+   }
+}
+async function markAvailable(id) {
+  const m = machines.find(x=>x.machine_id===id);
+  if (!m) return;
+  if (m.ends_at) {
+    const {error:historyError} = await client.from("laundry_history").insert({
+      machine_id:m.machine_id,
+      machine_name:machineNames[m.machine_id] || m.machine_name || m.machine_id,
+      user_name:m.user_name,
+      started_at:m.started_at,
+      ended_at:m.ends_at,
+      cycle_minutes:m.cycle_minutes,
+      marked_available_at:new Date().toISOString()
+    });
+    if (historyError) {
+      alert("Couldn't save laundry history, so the machine has not been cleared. Please try again. Details: "+historyError.message);
+      return;
+    }
+  }
+  const {error} = await client.from("laundry_machines").update({
+    user_name:null,started_at:null,ends_at:null,cycle_minutes:null
+  }).eq("machine_id",id);
+  if (error) alert("Couldn't update machine: "+error.message);
+  else {
+    await load();
+    notice.textContent = "Machine marked available. Thank you!";
+  }
+}
+async function loadHistory() {
+  const {data,error} = await client.from("laundry_history")
+    .select("machine_name,user_name,started_at,marked_available_at,cycle_minutes")
+    .order("marked_available_at",{ascending:false})
+    .limit(20);
+
+  if (error) {
+    historyRoot.innerHTML = '<p class="empty">Laundry history is temporarily unavailable.</p>';
+    return;
+  }
+
+  if (!data?.length) {
+    historyRoot.innerHTML = '<p class="empty">No completed laundry cycles yet. Your history will appear here when someone marks a machine available.</p>';
+    return;
+  }
+
+  historyRoot.innerHTML = data.map(r => {
+    const started = r.started_at ? new Date(r.started_at).toLocaleString() : "Unknown";
+    const available = r.marked_available_at ? new Date(r.marked_available_at).toLocaleString() : "Unknown";
+    return `<div class="list-item">
+      <strong>${safe(r.machine_name || "Laundry machine")}</strong>
+      <div class="small">Used by: ${safe(r.user_name || "Floor resident")}</div>
+      <div class="small">Started: ${safe(started)}</div>
+      <div class="small">Marked available: ${safe(available)}</div>
+    </div>`;
+  }).join("");
+}
+
+async function loadReports() {
+  const {data,error} = await client.from("machine_reports")
+    .select("machine_name,description,reported_by,status,created_at")
+    .order("created_at",{ascending:false}).limit(8);
+  if (error) {
+    reportsRoot.innerHTML = '<p class="empty">Reports are temporarily unavailable.</p>';
+    return;
+  }
+  reportsRoot.innerHTML = !data?.length ? '<p class="empty">No reports submitted.</p>' :
+    data.map(r=>`<div class="list-item"><strong>${safe(r.machine_name)} · ${safe(r.status)}</strong>
+      <div>${safe(r.description)}</div>
+      <div class="small">Reported by ${safe(r.reported_by || "Floor resident")} · ${new Date(r.created_at).toLocaleString()}</div></div>`).join("");
+}
+document.getElementById("reportForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  const id = document.getElementById("reportMachine").value;
+  const description = document.getElementById("reportDescription").value.trim();
+  const reporter = document.getElementById("reportName").value.trim();
+  const message = document.getElementById("reportMessage");
+  if (!description) return;
+  message.textContent = "Submitting report…";
+  const {error} = await client.from("machine_reports").insert({
+    machine_id:id,
+    machine_name:machineNames[id] || id,
+    description,
+    reported_by:reporter || null
+  });
+  if (error) {
+    message.textContent = "Couldn't submit report: "+error.message;
+  } else {
+    message.textContent = "Report submitted. Thank you for letting everyone know!";
+    document.getElementById("reportDescription").value = "";
+    document.getElementById("reportName").value = "";
+    await loadReports();
+  }
+});
+// Allow Enter/Go on the mobile keyboard to start a cycle.
+root.addEventListener("keydown", event => {
+  if (event.key !== "Enter" || !event.target || event.target.tagName !== "INPUT") return;
+  const match = /^(?:name|minutes)-(.+)$/.exec(event.target.id || "");
+  if (!match) return;
+  event.preventDefault();
+  event.target.blur();
+  startCycle(match[1]);
+});
+
+window.startCycle = startCycle;
+window.markAvailable = markAvailable;
+
+if (SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.includes("PASTE_")) {
+  client = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  load();
+  client.channel("laundry-live")
+    .on("postgres_changes",{event:"*",schema:"public",table:"laundry_machines"},load)
+     .on("postgres_changes",{event:"*",schema:"public",table:"machine_reports"},loadReports)
+    .on("postgres_changes",{event:"*",schema:"public",table:"laundry_history"},loadHistory)
+    .subscribe();
+  setInterval(() => {
+    const active = document.activeElement;
+    const typingInInput = active && active.tagName === "INPUT";
+    if (!typingInInput) render();
+  }, 1000);
+} else {
+  notice.textContent = "Setup needed: check your Supabase Project URL and publishable key.";
+}
+</script>
+</body>
+</html>
