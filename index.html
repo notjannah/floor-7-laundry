@@ -615,7 +615,11 @@ if (SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.includes("PASTE_")) {
      .on("postgres_changes",{event:"*",schema:"public",table:"machine_reports"},loadReports)
     .on("postgres_changes",{event:"*",schema:"public",table:"laundry_history"},loadHistory)
     .subscribe();
-  setInterval(render,1000);
+  setInterval(() => {
+    const active = document.activeElement;
+    const typingInInput = active && active.tagName === "INPUT";
+    if (!typingInInput) render();
+  }, 1000);
 } else {
   notice.textContent = "Setup needed: check your Supabase Project URL and publishable key.";
 }
