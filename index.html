@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floor Laundry</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f5ef;color:#173323;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+main{max-width:850px;margin:auto;padding:28px 18px}
+header{background:#1e5a3a;color:white;padding:28px;border-radius:20px}
+h1{font-size:38px;margin:8px 0}
+header p{line-height:1.5;color:#e0eee4}
+#notice{padding:12px;background:#fff0d8;border-radius:10px;margin:16px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:white;border:1px solid #dce5db;border-radius:16px;padding:20px}
+.card h2{margin:0 0 8px}
+.status{font-weight:700;margin:14px 0}
+.free{color:#207447}.busy{color:#a45a16}
+input{width:100%;padding:11px;border:1px solid #cbd7cb;border-radius:9px;margin:8px 0}
+button{padding:11px 14px;border:0;border-radius:9px;background:#1e5a3a;color:white;font-weight:700;cursor:pointer;margin:4px 4px 4px 0}
+button.secondary{background:#e7eee7;color:#173323}
+.small{font-size:13px;color:#66756a;line-height:1.5}
+footer{margin-top:24px}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div>YOUR FLOOR · LAUNDRY ROOM</div>
+<h1>Floor Laundry</h1>
+<p>See what's free before you head down. Start a cycle when you load a machine, and everyone can see the timer.</p>
+</header>
+<div id="notice">Connecting to the shared laundry tracker…</div>
+<div class="grid" id="machines"></div>
+<footer class="small">Shared floor laundry tracker. Please mark machines available when you're finished.</footer>
+</main>
+<script>
+const SUPABASE_URL = "https://svwhxepzyidhnbkmrsgc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_pXPEwdPBTFDqg50P8m8GlA_8j-RBQep";
+
+const root = document.getElementById("machines");
+const notice = document.getElementById("notice");
+let client;
+let machines = [];
+
+function safe(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function remaining(m) {
+  if (!m.ends_at) return 0;
+  return Math.max(0, Math.ceil((new Date(m.ends_at).getTime()-Date.now())/60000));
+}
+function render() {
+  root.innerHTML = machines.map(m => {
+    const mins = remaining(m);
+    const busy = mins > 0;
+    return `<section class="card">
+      <h2>${safe(m.machine_name)}</h2>
+      <div class="status ${busy?'busy':'free'}">${busy?'In use':'Available'}</div>
+      ${busy
+        ? `<p>Time remaining: <strong>${mins} min</strong></p><p class="small">Started by ${safe(m.user_name||'Floor resident')}</p>`
+        : `<p class="small">Ready for the next person.</p>`}
+      <label class="small" for="name-${safe(m.machine_id)}">Your name (first name or nickname)</label>
+      <input id="name-${safe(m.machine_id)}" maxlength="40" placeholder="Enter your name">
+      <button onclick="startCycle('${safe(m.machine_id)}',${m.machine_type==='Washer'?30:45})">Start ${m.machine_type==='Washer'?30:45}-min cycle</button>
+      <button class="secondary" onclick="markAvailable('${safe(m.machine_id)}')">Mark available</button>
+    </section>`;
+  }).join("");
+}
+async function load() {
+  const {data,error} = await client.from("laundry_machines")
+    .select("*").order("machine_id");
+  if(error) {
+    notice.textContent = "Couldn't load machines: "+error.message+
+      ". Check the Project URL, publishable key, and Supabase table permissions.";
+    return;
+  }
+  machines = data || [];
+  render();
+  notice.textContent = "Connected! Updates are shared through Supabase.";
+}
+async function startCycle(id, minutes) {
+  const m = machines.find(x=>x.machine_id===id);
+  if(!m) return;
+  if(remaining(m)>0 && !confirm("This machine has time remaining. Start a new cycle anyway?")) return;
+  const name = document.getElementById("name-"+id).value.trim();
+  if(!name) { alert("Please enter your name or nickname first."); return; }
+  const now = new Date();
+  const ends = new Date(now.getTime()+minutes*60000);
+  const {error} = await client.from("laundry_machines").update({
+    user_name:name,started_at:now.toISOString(),
+    ends_at:ends.toISOString(),cycle_minutes:minutes
+  }).eq("machine_id",id);
+  if(error) alert("Couldn't start timer: "+error.message);
+  else await load();
+}
+async function markAvailable(id) {
+  const {error} = await client.from("laundry_machines").update({
+    user_name:null,started_at:null,ends_at:null,cycle_minutes:null
+  }).eq("machine_id",id);
+  if(error) alert("Couldn't update machine: "+error.message);
+  else await load();
+}
+window.startCycle = startCycle;
+window.markAvailable = markAvailable;
+
+if(SUPABASE_URL.startsWith("http") &&
+   !SUPABASE_URL.includes("PASTE_") &&
+   !SUPABASE_ANON_KEY.includes("PASTE_")) {
+  client = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  load();
+  client.channel("laundry-live")
+    .on("postgres_changes",{event:"*",schema:"public",table:"laundry_machines"},load)
+    .subscribe();
+  setInterval(render,15000);
+} else {
+  notice.textContent = "Setup needed: add your Supabase Project URL and publishable key to this file.";
+}
+</script>
+</body>
+</html>
