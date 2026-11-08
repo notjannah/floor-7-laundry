@@ -61,6 +61,23 @@ button.gold:hover{background:#e4c44f}
 footer{margin-top:26px;padding:18px 4px;border-top:1px solid var(--border)}
 footer strong{color:var(--purple)}
 @media(max-width:480px){main{padding:14px 12px 28px}header{padding:23px 18px;border-radius:18px}.card{padding:17px}}
+
+.modal-backdrop[hidden]{display:none!important}
+.modal-backdrop{
+  position:fixed;inset:0;z-index:9999;display:flex;
+  align-items:center;justify-content:center;padding:22px;
+  background:rgba(20,8,32,.58);backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px)
+}
+.reminder-box{
+  width:min(100%,390px);background:linear-gradient(135deg,#301044,#4b1f6f);
+  color:white;text-align:center;padding:30px 24px;border-radius:22px;
+  border:2px solid #d4af37;box-shadow:0 18px 55px #16072066
+}
+.reminder-box h2{margin:0 0 12px;font-size:25px;color:#fff}
+.reminder-box p{line-height:1.6;color:#f3eaf8;margin:0 0 20px}
+.reminder-box button{min-width:120px;background:#d4af37;color:#301044;font-weight:800}
+
 </style>
 </head>
 <body>
@@ -74,9 +91,7 @@ footer strong{color:var(--purple)}
   <div id="notice" role="status" aria-live="polite">Connecting to the shared laundry tracker…</div>
   <div class="toolbar">
     <h2>Machine status</h2>
-    <button class="gold" id="notifyButton" onclick="enableNotifications()">Turn on notifications</button>
   </div>
-  <p class="small">Choose your own cycle length. Notifications work while this page is open and your browser allows them.</p>
   <div class="grid" id="machines"></div>
   <footer class="small"><strong>Floor 7 Laundry</strong> · Purple and gold theme inspired by Carlow University. Not an official university website. Please mark machines available when you're finished.</footer>
 </main>
@@ -86,10 +101,8 @@ const SUPABASE_URL = "https://svwhxepzyidhnbkmrsgc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_pXPEwdPBTFDqg50P8m8GlA_8j-RBQep";
 const root = document.getElementById("machines");
 const notice = document.getElementById("notice");
-const notifyButton = document.getElementById("notifyButton");
 let client;
 let machines = [];
-const notified = new Set();
 
 function safe(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({
@@ -99,44 +112,6 @@ function safe(s) {
 function remaining(m) {
   if (!m.ends_at) return 0;
   return Math.max(0, Math.ceil((new Date(m.ends_at).getTime()-Date.now())/60000));
-}
-function notificationKey(m) { return `${m.machine_id}:${m.ends_at}`; }
-
-function checkFinishedCycles() {
-  const now = Date.now();
-  for (const m of machines) {
-    if (!m.ends_at) continue;
-    const end = new Date(m.ends_at).getTime();
-    const key = notificationKey(m);
-    if (end <= now && !notified.has(key)) {
-      notified.add(key);
-      if ("Notification" in window && Notification.permission === "granted") {
-        try {
-          new Notification("Laundry timer finished", {
-            body: `${m.machine_name} should be ready.`,
-            tag: key
-          });
-        } catch (e) {}
-      }
-    }
-  }
-}
-async function enableNotifications() {
-  if (!("Notification" in window)) {
-    alert("This browser doesn't support notifications. You can still use the timers on this page.");
-    return;
-  }
-  try {
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      notifyButton.textContent = "Notifications enabled";
-      notice.textContent = "Notifications enabled in this browser. Keep this page open for timer alerts.";
-    } else {
-      notice.textContent = "Notifications aren't enabled. You can change this in your browser's site settings.";
-    }
-  } catch (e) {
-    notice.textContent = "Please enable notifications in your browser's site settings.";
-  }
 }
 function render() {
   root.innerHTML = machines.map(m => {
@@ -173,7 +148,6 @@ async function load() {
     return;
   }
   machines = data || [];
-  checkFinishedCycles();
   render();
   if (notice.textContent.startsWith("Connecting") || notice.textContent.startsWith("Couldn't load")) {
     notice.textContent = "Connected! Machine updates are shared through Supabase.";
@@ -191,10 +165,7 @@ async function startCycle(id) {
   if(!Number.isInteger(minutes) || minutes < 25 || minutes > 45) {
     alert("Choose a timer between 25 and 45 minutes."); minutesInput.focus(); return;
   }
-  if ("Notification" in window && Notification.permission === "default") {
-    try { await Notification.requestPermission(); } catch(e) {}
-  }
-  const now = new Date();
+const now = new Date();
   const ends = new Date(now.getTime()+minutes*60000);
   const {error} = await client.from("laundry_machines").update({
     user_name:name,started_at:now.toISOString(),
@@ -202,7 +173,7 @@ async function startCycle(id) {
   }).eq("machine_id",id);
   if(error) alert("Couldn't start timer: "+error.message);
   else {
-    notice.textContent = "Timer started. Keep this page open if you want a browser notification when it ends.";
+    notice.textContent = "Timer started successfully.";
     await load();
   }
 }
@@ -215,7 +186,6 @@ async function markAvailable(id) {
 }
 window.startCycle = startCycle;
 window.markAvailable = markAvailable;
-window.enableNotifications = enableNotifications;
 
 if(SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.includes("PASTE_")) {
   client = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
@@ -228,5 +198,22 @@ if(SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.includes("PASTE_")) {
   notice.textContent = "Setup needed: add your Supabase Project URL and publishable key to this file.";
 }
 </script>
+
+<div id="reminderModal" class="modal-backdrop" hidden>
+  <div class="reminder-box" role="dialog" aria-modal="true" aria-labelledby="reminderTitle">
+    <h2 id="reminderTitle">Reminder: Set a timer!</h2>
+    <p>Open your Clock app and set a timer so you remember when your laundry is ready.</p>
+    <button onclick="closeReminder()">Okay</button>
+  </div>
+</div>
+<script>
+function showReminder() {
+  document.getElementById("reminderModal").hidden = false;
+}
+function closeReminder() {
+  document.getElementById("reminderModal").hidden = true;
+}
+</script>
+
 </body>
 </html>
