@@ -377,7 +377,10 @@ function progress(m) {
 function render() {
   // Avoid replacing machine cards while someone is typing on a phone.
   const focused = document.activeElement;
-  if (focused && root.contains(focused) && focused.tagName === "INPUT") return;
+  const savedInputs = {};
+  root.querySelectorAll("input[id^='name-'], input[id^='minutes-']").forEach(input => {
+    savedInputs[input.id] = input.value;
+  });
   const availableCount = document.getElementById("availableCount");
   const washerCount = document.getElementById("washerCount");
   const dryerCount = document.getElementById("dryerCount");
@@ -471,6 +474,10 @@ function render() {
       </div>
     </section>`;
   }).join("");
+  Object.entries(savedInputs).forEach(([id, value]) => {
+    const input = document.getElementById(id);
+    if (input) input.value = value;
+  });
 }
 async function load() {
   const {data,error} = await client.from("laundry_machines").select("*").order("machine_id");
@@ -607,14 +614,12 @@ document.getElementById("reportForm").addEventListener("submit",async event=>{
     await loadReports();
   }
 });
-// Allow Enter/Go on the mobile keyboard to start a cycle.
+// Prevent Enter/Go from unexpectedly starting a cycle.
 root.addEventListener("keydown", event => {
   if (event.key !== "Enter" || !event.target || event.target.tagName !== "INPUT") return;
-  const match = /^(?:name|minutes)-(.+)$/.exec(event.target.id || "");
-  if (!match) return;
+  if (!/^(?:name|minutes)-(.+)$/.test(event.target.id || "")) return;
   event.preventDefault();
   event.target.blur();
-  startCycle(match[1]);
 });
 
 window.startCycle = startCycle;
