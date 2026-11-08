@@ -516,7 +516,7 @@ function render() {
       <p class="small">Choose a whole number from 25 to 45 minutes.</p>
       <div class="actions">
         <button ${busy ? "disabled" : ""} onclick="startCycle('${id}')">Start timer</button>
-        <button class="secondary" onclick="markAvailable('${id}')">MARK AVAILABLE</button>
+        <button class="secondary" onclick="markAvailable('${id}')">ARE YOU SURE?</button>
       </div>
     </section>`;
   }).join("");
@@ -577,6 +577,7 @@ async function startCycle(id) {
 async function markAvailable(id) {
   const m = machines.find(x=>x.machine_id===id);
   if (!m) return;
+  if (!confirm("Are you sure you want to mark this machine as available?")) return;
   if (m.ends_at) {
     const {error:historyError} = await client.from("laundry_history").insert({
       machine_id:m.machine_id,
