@@ -269,6 +269,40 @@ body {
   background: currentColor;
 }
 
+
+/* Dark purple and gold Clock reminder popup only */
+.reminder-box {
+  background: #261631;
+  border: 1px solid #B9A16A;
+  color: #F5EFF8;
+}
+.reminder-box h2 {
+  color: #F4D98B;
+  text-align: center;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.reminder-box .reminder {
+  background: #35203F;
+  border: 1px solid #B9A16A;
+  border-left: 4px solid #B9A16A;
+  color: #F5EFF8;
+}
+.reminder-box .reminder strong {
+  color: #E5C779;
+}
+.reminder-box .reminder p {
+  color: #F5EFF8;
+}
+.reminder-box > button {
+  display: block;
+  margin: 20px auto 0;
+  background: #B9A16A;
+  color: #261631;
+  border: none;
+  font-weight: 800;
+}
+
 </style>
 </head>
 <body>
@@ -342,13 +376,12 @@ body {
 
 <div id="clockReminder" class="modal-backdrop" hidden>
   <div class="reminder-box" role="dialog" aria-modal="true" aria-labelledby="clockReminderTitle">
-    <h2 id="clockReminderTitle">Laundry timer started!</h2>
-    <p>Your timer is running, but this website may not alert you when it finishes.</p>
+    <h2 id="clockReminderTitle">LAUNDRY TIMER STARTED!</h2>
     <div class="reminder">
       <strong>REMINDER</strong>
-      <p>Set an alarm in your Clock app so you remember to collect your laundry.</p>
+      <p>Set an alarm on your Clock app so you remember to collect your laundry.</p>
     </div>
-    <button type="button" onclick="closeClockReminder()">Got it!</button>
+    <button type="button" onclick="closeClockReminder()">GOT IT!</button>
   </div>
 </div>
 
