@@ -78,6 +78,10 @@ footer strong{color:var(--purple)}
 .reminder-box p{line-height:1.6;color:#f3eaf8;margin:0 0 20px}
 .reminder-box button{min-width:120px;background:#d4af37;color:#301044;font-weight:800}
 
+button:disabled,button:disabled:hover{
+  background:#d8d1dc;color:#74697b;cursor:not-allowed;
+  opacity:.7;transform:none
+}
 </style>
 </head>
 <body>
@@ -135,7 +139,7 @@ function render() {
       <input id="minutes-${machineId}" type="number" min="25" max="45" step="1" value="${defaultMinutes}" inputmode="numeric" aria-describedby="hint-${machineId}">
       <p class="small" id="hint-${machineId}">Enter any whole number from 25 to 45 minutes.</p>
       <div class="actions">
-        <button onclick="startCycle('${machineId}')">Start timer</button>
+        <button ${busy ? 'disabled aria-disabled="true"' : ''} onclick="startCycle('${machineId}')">Start timer</button>
         <button class="secondary" onclick="markAvailable('${machineId}')">Mark available</button>
       </div>
     </section>`;
@@ -156,7 +160,10 @@ async function load() {
 async function startCycle(id) {
   const m = machines.find(x=>x.machine_id===id);
   if(!m) return;
-  if(remaining(m)>0 && !confirm("This machine has time remaining. Start a new cycle anyway?")) return;
+  if(remaining(m)>0) {
+    alert("This machine is already in use. Please choose an available machine.");
+    return;
+  }
   const nameInput = document.getElementById("name-"+id);
   const minutesInput = document.getElementById("minutes-"+id);
   const name = nameInput.value.trim();
@@ -167,14 +174,22 @@ async function startCycle(id) {
   }
 const now = new Date();
   const ends = new Date(now.getTime()+minutes*60000);
-  const {error} = await client.from("laundry_machines").update({
+  const {data,error} = await client.from("laundry_machines").update({
     user_name:name,started_at:now.toISOString(),
     ends_at:ends.toISOString(),cycle_minutes:minutes
-  }).eq("machine_id",id);
-  if(error) alert("Couldn't start timer: "+error.message);
-  else {
+  }).eq("machine_id",id)
+    .or("ends_at.is.null,ends_at.lte." + now.toISOString())
+    .select("machine_id");
+
+  if(error) {
+    alert("Couldn't start timer: "+error.message);
+  } else if(!data || data.length === 0) {
+    alert("Someone has just started this machine. Please choose another available machine.");
+    await load();
+  } else {
     notice.textContent = "Timer started successfully.";
     await load();
+    showReminder();
   }
 }
 async function markAvailable(id) {
