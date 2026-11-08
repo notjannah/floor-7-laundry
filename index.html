@@ -3,47 +3,93 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Floor Laundry</title>
+<title>Floor 7 Laundry</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+:root{
+  --purple:#4b1f6f;
+  --purple-dark:#301044;
+  --purple-light:#f3ecf8;
+  --gold:#d4af37;
+  --gold-light:#fff7d9;
+  --ink:#2b2032;
+  --muted:#74697b;
+  --paper:#fff;
+  --page:#f8f5fb;
+  --border:#e4d8ec;
+  --green:#24764d;
+  --green-bg:#e9f6ee;
+  --orange:#985d0a;
+  --orange-bg:#fff3df;
+}
 *{box-sizing:border-box}
-body{margin:0;background:#f3f5ef;color:#173323;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
-main{max-width:850px;margin:auto;padding:28px 18px}
-header{background:#1e5a3a;color:white;padding:28px;border-radius:20px}
-h1{font-size:38px;margin:8px 0}
-header p{line-height:1.5;color:#e0eee4}
-#notice{padding:12px;background:#fff0d8;border-radius:10px;margin:16px 0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
-.card{background:white;border:1px solid #dce5db;border-radius:16px;padding:20px}
-.card h2{margin:0 0 8px}
-.status{font-weight:700;margin:14px 0}
-.free{color:#207447}.busy{color:#a45a16}
-input{width:100%;padding:11px;border:1px solid #cbd7cb;border-radius:9px;margin:8px 0}
-button{padding:11px 14px;border:0;border-radius:9px;background:#1e5a3a;color:white;font-weight:700;cursor:pointer;margin:4px 4px 4px 0}
-button.secondary{background:#e7eee7;color:#173323}
-.small{font-size:13px;color:#66756a;line-height:1.5}
-footer{margin-top:24px}
+body{
+  margin:0;background:radial-gradient(circle at top right,#efe2f7 0,transparent 36%),var(--page);
+  color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+main{max-width:980px;margin:auto;padding:24px 16px 36px}
+header{
+  background:linear-gradient(135deg,var(--purple-dark),var(--purple));
+  color:white;padding:28px 24px;border-radius:24px;border-bottom:6px solid var(--gold);
+  box-shadow:0 12px 30px #30104422;
+}
+.eyebrow{font-size:12px;letter-spacing:1.8px;font-weight:800;color:#f4dc83;text-transform:uppercase}
+h1{font-size:clamp(30px,6vw,44px);line-height:1.1;margin:10px 0}
+header p{line-height:1.6;color:#f3eaf8;max-width:650px;margin-bottom:0}
+#notice{padding:13px 15px;background:var(--gold-light);border:1px solid #ead58a;border-radius:13px;margin:18px 0;color:#57430b;line-height:1.45}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:18px 0}
+.toolbar h2{font-size:20px;margin:0;color:var(--purple-dark)}
+.small{font-size:13px;color:var(--muted);line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 5px 18px #3010440a;min-width:0}
+.card h2{margin:0 0 10px;color:var(--purple-dark);font-size:21px}
+.pill{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.3px;padding:6px 10px;border-radius:999px;background:var(--purple-light);color:var(--purple)}
+.status{font-weight:800;margin:14px 0 8px;font-size:16px}
+.free{color:var(--green)}.busy{color:var(--orange)}
+.time-left{font-size:27px;font-weight:850;color:var(--purple-dark);margin:8px 0}
+label{display:block;font-weight:700;font-size:13px;color:var(--purple-dark);margin-top:12px}
+input{display:block;width:100%;padding:12px;border:1px solid #d7c9e1;border-radius:10px;margin:7px 0 10px;background:#fff;color:var(--ink);font:inherit}
+input:focus{outline:3px solid #d4af3744;border-color:var(--gold)}
+button{padding:12px 14px;border:0;border-radius:10px;background:var(--purple);color:white;font-weight:800;cursor:pointer;margin:5px 5px 0 0;font:inherit;font-size:14px;transition:transform .12s,background .12s}
+button:hover{background:var(--purple-dark);transform:translateY(-1px)}
+button.secondary{background:var(--purple-light);color:var(--purple-dark);border:1px solid var(--border)}
+button.secondary:hover{background:#e9dcef}
+button.gold{background:var(--gold);color:#301e05}
+button.gold:hover{background:#e4c44f}
+.actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.actions button{flex:1 1 130px}
+footer{margin-top:26px;padding:18px 4px;border-top:1px solid var(--border)}
+footer strong{color:var(--purple)}
+@media(max-width:480px){main{padding:14px 12px 28px}header{padding:23px 18px;border-radius:18px}.card{padding:17px}}
 </style>
 </head>
 <body>
 <main>
-<header>
-<div>YOUR FLOOR · LAUNDRY ROOM</div>
-<h1>Floor Laundry</h1>
-<p>See what's free before you head down. Start a cycle when you load a machine, and everyone can see the timer.</p>
-</header>
-<div id="notice">Connecting to the shared laundry tracker…</div>
-<div class="grid" id="machines"></div>
-<footer class="small">Shared floor laundry tracker. Please mark machines available when you're finished.</footer>
+  <header>
+    <div class="eyebrow">Floor 7 · Laundry Room</div>
+    <h1>Floor 7 Laundry</h1>
+    <p>Check washer and dryer availability before heading down. Start your timer to help keep track of when a machine should be ready.</p>
+  </header>
+
+  <div id="notice" role="status" aria-live="polite">Connecting to the shared laundry tracker…</div>
+  <div class="toolbar">
+    <h2>Machine status</h2>
+    <button class="gold" id="notifyButton" onclick="enableNotifications()">Turn on notifications</button>
+  </div>
+  <p class="small">Choose your own cycle length. Notifications work while this page is open and your browser allows them.</p>
+  <div class="grid" id="machines"></div>
+  <footer class="small"><strong>Floor 7 Laundry</strong> · Purple and gold theme inspired by Carlow University. Not an official university website. Please mark machines available when you're finished.</footer>
 </main>
+
 <script>
 const SUPABASE_URL = "https://svwhxepzyidhnbkmrsgc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_pXPEwdPBTFDqg50P8m8GlA_8j-RBQep";
-
 const root = document.getElementById("machines");
 const notice = document.getElementById("notice");
+const notifyButton = document.getElementById("notifyButton");
 let client;
 let machines = [];
+const notified = new Set();
 
 function safe(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({
@@ -54,41 +100,100 @@ function remaining(m) {
   if (!m.ends_at) return 0;
   return Math.max(0, Math.ceil((new Date(m.ends_at).getTime()-Date.now())/60000));
 }
+function notificationKey(m) { return `${m.machine_id}:${m.ends_at}`; }
+
+function checkFinishedCycles() {
+  const now = Date.now();
+  for (const m of machines) {
+    if (!m.ends_at) continue;
+    const end = new Date(m.ends_at).getTime();
+    const key = notificationKey(m);
+    if (end <= now && !notified.has(key)) {
+      notified.add(key);
+      if ("Notification" in window && Notification.permission === "granted") {
+        try {
+          new Notification("Laundry timer finished", {
+            body: `${m.machine_name} should be ready.`,
+            tag: key
+          });
+        } catch (e) {}
+      }
+    }
+  }
+}
+async function enableNotifications() {
+  if (!("Notification" in window)) {
+    alert("This browser doesn't support notifications. You can still use the timers on this page.");
+    return;
+  }
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      notifyButton.textContent = "Notifications enabled";
+      notice.textContent = "Notifications enabled in this browser. Keep this page open for timer alerts.";
+    } else {
+      notice.textContent = "Notifications aren't enabled. You can change this in your browser's site settings.";
+    }
+  } catch (e) {
+    notice.textContent = "Please enable notifications in your browser's site settings.";
+  }
+}
 function render() {
   root.innerHTML = machines.map(m => {
     const mins = remaining(m);
     const busy = mins > 0;
+    const defaultMinutes = m.machine_type === "Washer" ? 30 : 45;
+    const machineId = safe(m.machine_id);
+    const originalName = String(m.machine_name || "");
+    const side = /2|right/i.test(originalName) ? "Right" : "Left";
+    const displayName = `${m.machine_type || "Machine"} (${side})`;
     return `<section class="card">
-      <h2>${safe(m.machine_name)}</h2>
-      <div class="status ${busy?'busy':'free'}">${busy?'In use':'Available'}</div>
+      <span class="pill">${safe(m.machine_type || "Machine")}</span>
+      <h2>${safe(displayName)}</h2>
+      <div class="status ${busy?'busy':'free'}">${busy?'● In use':'● Available'}</div>
       ${busy
-        ? `<p>Time remaining: <strong>${mins} min</strong></p><p class="small">Started by ${safe(m.user_name||'Floor resident')}</p>`
+        ? `<div class="time-left">${mins} min left</div><p class="small">Started by ${safe(m.user_name||'Floor resident')}</p>`
         : `<p class="small">Ready for the next person.</p>`}
-      <label class="small" for="name-${safe(m.machine_id)}">Your name (first name or nickname)</label>
-      <input id="name-${safe(m.machine_id)}" maxlength="40" placeholder="Enter your name">
-      <button onclick="startCycle('${safe(m.machine_id)}',${m.machine_type==='Washer'?30:45})">Start ${m.machine_type==='Washer'?30:45}-min cycle</button>
-      <button class="secondary" onclick="markAvailable('${safe(m.machine_id)}')">Mark available</button>
+      <label for="name-${machineId}">Your name or nickname</label>
+      <input id="name-${machineId}" maxlength="40" placeholder="Enter your name" autocomplete="nickname">
+      <label for="minutes-${machineId}">Custom cycle time (minutes)</label>
+      <input id="minutes-${machineId}" type="number" min="25" max="45" step="1" value="${defaultMinutes}" inputmode="numeric" aria-describedby="hint-${machineId}">
+      <p class="small" id="hint-${machineId}">Enter any whole number from 25 to 45 minutes.</p>
+      <div class="actions">
+        <button onclick="startCycle('${machineId}')">Start timer</button>
+        <button class="secondary" onclick="markAvailable('${machineId}')">Mark available</button>
+      </div>
     </section>`;
   }).join("");
 }
 async function load() {
-  const {data,error} = await client.from("laundry_machines")
-    .select("*").order("machine_id");
+  const {data,error} = await client.from("laundry_machines").select("*").order("machine_id");
   if(error) {
-    notice.textContent = "Couldn't load machines: "+error.message+
-      ". Check the Project URL, publishable key, and Supabase table permissions.";
+    notice.textContent = "Couldn't load machines: "+error.message+". Check the Supabase table permissions.";
     return;
   }
   machines = data || [];
+  checkFinishedCycles();
   render();
-  notice.textContent = "Connected! Updates are shared through Supabase.";
+  if (notice.textContent.startsWith("Connecting") || notice.textContent.startsWith("Couldn't load")) {
+    notice.textContent = "Connected! Machine updates are shared through Supabase.";
+  }
 }
-async function startCycle(id, minutes) {
+async function startCycle(id) {
   const m = machines.find(x=>x.machine_id===id);
   if(!m) return;
   if(remaining(m)>0 && !confirm("This machine has time remaining. Start a new cycle anyway?")) return;
-  const name = document.getElementById("name-"+id).value.trim();
-  if(!name) { alert("Please enter your name or nickname first."); return; }
+  const nameInput = document.getElementById("name-"+id);
+  const minutesInput = document.getElementById("minutes-"+id);
+  const name = nameInput.value.trim();
+  const minutes = Number(minutesInput.value);
+  if(!name) { alert("Please enter your name or nickname first."); nameInput.focus(); return; }
+  if(!Number.isInteger(minutes) || minutes < 25 || minutes > 45) {
+    alert("Choose a timer between 25 and 45 minutes."); minutesInput.focus(); return;
+  }
+  if ("Notification" in window && Notification.permission === "default") {
+    try { await Notification.requestPermission(); } catch(e) {}
+  }
   const now = new Date();
   const ends = new Date(now.getTime()+minutes*60000);
   const {error} = await client.from("laundry_machines").update({
@@ -96,7 +201,10 @@ async function startCycle(id, minutes) {
     ends_at:ends.toISOString(),cycle_minutes:minutes
   }).eq("machine_id",id);
   if(error) alert("Couldn't start timer: "+error.message);
-  else await load();
+  else {
+    notice.textContent = "Timer started. Keep this page open if you want a browser notification when it ends.";
+    await load();
+  }
 }
 async function markAvailable(id) {
   const {error} = await client.from("laundry_machines").update({
@@ -107,16 +215,15 @@ async function markAvailable(id) {
 }
 window.startCycle = startCycle;
 window.markAvailable = markAvailable;
+window.enableNotifications = enableNotifications;
 
-if(SUPABASE_URL.startsWith("http") &&
-   !SUPABASE_URL.includes("PASTE_") &&
-   !SUPABASE_ANON_KEY.includes("PASTE_")) {
+if(SUPABASE_URL.startsWith("http") && !SUPABASE_ANON_KEY.includes("PASTE_")) {
   client = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   load();
   client.channel("laundry-live")
     .on("postgres_changes",{event:"*",schema:"public",table:"laundry_machines"},load)
     .subscribe();
-  setInterval(render,15000);
+  setInterval(() => { checkFinishedCycles(); render(); }, 15000);
 } else {
   notice.textContent = "Setup needed: add your Supabase Project URL and publishable key to this file.";
 }
