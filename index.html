@@ -673,18 +673,61 @@ async function loadHistory() {
     return;
   }
 
-  historyRoot.innerHTML = data.map(r => {
-    const started = r.started_at ? new Date(r.started_at).toLocaleString() : "Unknown";
-    const available = r.marked_available_at ? new Date(r.marked_available_at).toLocaleString() : "Unknown";
-    return `<div class="list-item">
-      <strong>${safe(r.machine_name || "Laundry machine")}</strong>
-      <div class="small">Used by: ${safe(r.user_name || "Floor resident")}</div>
-      <div class="small">Started: ${safe(started)}</div>
-      <div class="small">Marked available: ${safe(available)}</div>
-    </div>`;
-  }).join("");
-}
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
+  const groups = {
+    "Today": [],
+    "Yesterday": [],
+    "Earlier This Week": [],
+    "Last Week": [],
+    "Older": []
+  };
+
+  data.forEach(r => {
+    const dateValue = r.marked_available_at || r.started_at;
+    const date = dateValue ? new Date(dateValue) : null;
+
+    if (!date || Number.isNaN(date.getTime())) {
+      groups["Older"].push(r);
+      return;
+    }
+
+    const day = new Date(date);
+    day.setHours(0, 0, 0, 0);
+    const daysAgo = Math.floor((today - day) / 86400000);
+
+    if (daysAgo <= 0) {
+      groups["Today"].push(r);
+    } else if (daysAgo === 1) {
+      groups["Yesterday"].push(r);
+    } else if (daysAgo < 7) {
+      groups["Earlier This Week"].push(r);
+    } else if (daysAgo < 14) {
+      groups["Last Week"].push(r);
+    } else {
+      groups["Older"].push(r);
+    }
+  });
+
+  historyRoot.innerHTML = Object.entries(groups)
+    .filter(([label, entries]) => entries.length > 0)
+    .map(([label, entries]) => `
+      <section class="history-group">
+        <h3 class="history-group-heading">${label}</h3>
+        ${entries.map(r => {
+          const started = r.started_at ? new Date(r.started_at).toLocaleString() : "Unknown";
+          const available = r.marked_available_at ? new Date(r.marked_available_at).toLocaleString() : "Unknown";
+          return `<div class="list-item">
+            <strong>${safe(r.machine_name || "Laundry machine")}</strong>
+            <div class="small">Used by: ${safe(r.user_name || "Floor resident")}</div>
+            <div class="small">Started: ${safe(started)}</div>
+            <div class="small">Marked available: ${safe(available)}</div>
+          </div>`;
+        }).join("")}
+      </section>
+    `).join("");
+}
 async function loadReports() {
   const {data,error} = await client.from("machine_reports")
     .select("machine_name,description,reported_by,status,created_at")
