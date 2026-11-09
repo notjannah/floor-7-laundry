@@ -376,7 +376,7 @@ body {
         <option value="dryer2">Dryer 2</option>
       </select>
       <label for="reportName">Your name or nickname (optional)</label>
-      <input id="reportName" maxlength="40" placeholder="Nickname">
+      <input id="reportName" maxlength="40" placeholder="Enter your name">
       <label for="reportDescription">What is wrong?</label>
       <textarea id="reportDescription" maxlength="1000" required placeholder="Describe the issue…"></textarea>
       <button type="submit" style="margin-top:12px">Submit report</button>
@@ -400,7 +400,9 @@ body {
     <div class="reminder">
       <strong>REMINDER</strong>
       <p>Set an alarm on your Clock app so you remember to collect your laundry.</p>
+      <p>If Clock doesn't open, please open it manually on your phone.</p>
     </div>
+    <button type="button" id="openClockAppButton" onclick="openClockApp()" style="background:#b9a16a;color:#32104f;margin-bottom:10px">OPEN CLOCK APP</button>
     <button type="button" onclick="closeClockReminder()">GOT IT!</button>
   </div>
 </div>
@@ -575,6 +577,17 @@ async function load() {
 }
 function closeClockReminder() {
   document.getElementById("clockReminder").hidden = true;
+}
+
+function openClockApp() {
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  if (isAndroid) {
+    window.location.href =
+      "intent://clock/#Intent;scheme=android-app;package=com.google.android.deskclock;end";
+  } else {
+    alert("Please open the Clock app on your phone and set an alarm for the same number of minutes as your laundry timer.");
+  }
 }
 
 async function startCycle(id) {
